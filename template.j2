@@ -1,0 +1,11 @@
+
+
+set vlans {{vlan.vlan_name}} vlan-id {{vlan.vlan_id}}
+set vlans {{vlan.vlan_name}} description "{{vlan.vlan_desc}}"
+set vlans {{vlan.vlan_name}} l3-interface irb.{{irb.logcial_unit_number}}
+set interfaces irb unit {{vlan.vlan_id}} family inet address {{subnet.ip_addr}}
+set routing-instances {{host.name}} interface irb.{{irb.logcial_unit_number}}
+
+{% for iface in interface %}
+set interfaces {{iface}} unit {{int_logcial_unit.number}} family ethernet-switching vlan members {{vlan.vlan_name}}
+{% endfor %}

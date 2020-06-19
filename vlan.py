@@ -4,76 +4,93 @@ import getpass
 from pprint import pprint
 from jinja2 import Template
 import yaml
+import time
 
 #efine vlan config template Jinja2 file
 #define vlan parameters setting Yaml file  
-TEMPLATE_FILE = 'template.j2'
+TEMPLATE_FILE = 'j2-template.j2'
 PARA_FILE = 'vlan.yml'
-#def main():
-    
-
-host = None
-uname = None
-pw = None
-# input Host name or IP
-if host == None:
-    host = input("Hostname or IP:")
-    print(host)
-
-# input username
-if uname == None:
-    uname = input("Username:")
-    print(uname)
-
-# input password
-if pw == None:
-    pw = getpass.getpass()
-    print(pw)
-
-#connect to NETCONF and open connection
-dev = Device(host=host, user=uname, password=pw)
-dev.open()
-
-#load cofigure file from yaml
-confpara = yaml.load(open(PARA_FILE).read())
-#pprint(confpara)
-
-#enter configuration mode
-#cu = Config(dev)
-
-
-#below for testing render
-template = Template(open(TEMPLATE_FILE).read())
-f = open('output.txt', 'w')
-print (template.render(confpara),file=f)
 
 
 
+#Load template Jinja2 file and parameters Yaml file
+# return 0 - Success
+# return 1 - Failed
+def SaveConfig (template, parameters):
 
-#run show | compare
-diff = cu.diff()
-
-
-#load Jingja2 template , and vars need to be rendered into the template
-with Config(dev) as cu:
-
-    cu.load(template_path=TEMPLATE_FILE, template_vars=confpara, format='txt') 
-
-    template = Template(TEMPLATE_FILE)
-    template.render(vlan_vars)
-    #check syntax
-    cu.commit_check()
-    #commit configuraion
-    cu.commit()
-
-#close connection
-#dev.close()
-
-
-
+    try:
+        template = Template(open(template).read())
+        confpara = yaml.load(open(parameters).read(),Loader=yaml.FullLoader)
+        print(template.render(confpara))
+        #save the rendered configuratio to file: Y-M-D-H_M_S
+        savefile = template.render(confpara)
+        now = time.strftime("%Y-%m-%d-%H_%M_%S",time.localtime(time.time())) 
+        fname= now + r"-configure.txt"
+        f = open(fname, 'w')
+        print(savefile,file=f)       
+        return 0
+    except:
+        print("File Load Failed")
+        return 1
+    return 0    
 
 
 
+def main():
 
-#if __name__ == '__main__':
-#    main()
+    Host = None
+    ID = None
+    Passwd = None
+    # input Host name or IP
+    if Host == None:
+       Host = input("Hostname or IP:")
+       print(Host)
+
+    # input username
+    if ID == None:
+       ID = input("Username:")
+       print(ID)
+
+    # input password
+    if Passwd == None:
+       Passwd = getpass.getpass()
+       print(Passwd)
+
+    try:
+        dev = Device(host=Host, 
+                     user=ID, 
+                     password=Passwd)
+        dev.open()
+        with Config(dev) as cu:
+            #run show | compare
+            diff = cu.diff()
+            if diff:
+                cu.rollback()
+            #validate configration, if error, reruen 1 (failed)
+            #commit configuraion
+            cu.load(template_path = TEMPLATE_FILE,template_vars = PARA_FILE, merge = True)
+            try:
+                cu.commit_check()
+            except jnpr.junos.exception.CommitError as err:
+                print("Error configuration, Please check syntax" + err)
+                return 1
+            else:           
+                cu.commit()
+                #save the configuration to file
+                save = SaveConfig (TEMPLATE_FILE,PARA_FILE)
+                #save failed
+                if(save == 1):
+                    print('Save Configure file Failed')
+                    return 1;
+    except jnpr.junos.exception.ConnectError as err:
+        print("Error connecting : " + err)
+        return 1 
+    finally:
+        print("Closing connection " + Host)
+        dev.close()
+    return 0
+
+
+
+if __name__ == '__main__':
+    main()

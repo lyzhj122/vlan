@@ -1,0 +1,36 @@
+                               
+interfaces {   
+    {% for iface in interface %}                          
+    {{iface}} {                         
+        unit 0 {                                            
+            family ethernet-switching { 
+                vlan {                  
+                    members {{vlan.vlan_name}};  
+                }                       
+            }                           
+        }                               
+    }                                     
+    {% endfor %}	
+    irb {                               
+        unit {{irb.logcial_unit_number}} {                     
+            family inet {               
+                address {{subnet.ip_addr}};  
+            }                           
+        }                               
+    }                                   
+}         
+                              
+routing-instances {                     
+    {{routing_instance.name}} {                          
+        interface irb.{{irb.logcial_unit_number}};             
+    }                                   
+}                                       
+                                  
+                                   
+vlans {                                 
+    DS-VL4496 {                         
+        description "{{vlan.vlan_desc}}";
+        vlan-id {{vlan.vlan_id}};                   
+        l3-interface {{irb.logcial_unit_number}};          
+    }                                   
+}  

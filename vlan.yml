@@ -1,0 +1,25 @@
+---      
+vlan:
+    vlan_name: DS-VL4496
+    vlan_id: 4496
+    vlan_desc: << DS-VL4496-LTE-TEST >>
+
+interface:
+      - xe-2/0/90
+      - xe-3/0/90
+
+int_logcial_unit:
+    number: 0
+    
+    
+subnet:
+    ip_addr: 10.10.20.1/30
+    
+routing_instance:
+    name: LTE-TEST
+
+irb:
+    logcial_unit_number: 4496
+
+    
+    
